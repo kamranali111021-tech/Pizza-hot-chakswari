@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pizza Hot Restaurant - Online Menu</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--red:#e63946;--dark:#171717;--cream:#fff8ef;--gold:#f4a261}
+body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;color:#222}
+header{background:linear-gradient(135deg,#171717,#3a0d0d);color:#fff;padding:28px 18px;position:sticky;top:0;z-index:20;box-shadow:0 3px 15px #0004}
+.header-inner{max-width:1200px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.logo h1{font-size:30px;color:#fff}.logo p{color:#ffd6d6;margin-top:5px}
+.cart-btn{background:var(--red);border:0;color:#fff;padding:13px 18px;border-radius:30px;font-weight:bold;cursor:pointer;font-size:15px}
+.hero{background:linear-gradient(135deg,#e63946,#8d1720);color:white;text-align:center;padding:45px 18px}
+.hero h2{font-size:38px;margin-bottom:10px}.hero p{font-size:17px}
+.controls{max-width:1200px;margin:20px auto;padding:0 15px}
+.search{width:100%;padding:15px 18px;border:1px solid #ddd;border-radius:12px;font-size:16px;outline:none}
+.categories{display:flex;gap:8px;overflow-x:auto;padding:14px 0}
+.categories button{white-space:nowrap;border:1px solid #ddd;background:white;padding:10px 15px;border-radius:25px;cursor:pointer}
+.categories button.active,.categories button:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.menu{max-width:1200px;margin:auto;padding:0 15px 60px}
+.category-title{font-size:26px;margin:28px 0 14px;border-left:5px solid var(--red);padding-left:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}
+.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 3px 14px #0000000d;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:18px}.desc{color:#666;font-size:13px;line-height:1.4}.price{font-weight:bold;color:var(--red);font-size:18px}
+.card button{background:var(--dark);color:white;border:0;border-radius:9px;padding:11px;cursor:pointer;font-weight:bold}
+.card button:hover{background:var(--red)}
+.size-row{display:flex;gap:6px;flex-wrap:wrap}.size-row label{border:1px solid #ddd;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:13px}.size-row input{margin-right:4px}
+.no-results{text-align:center;padding:40px;color:#777}
+footer{background:#171717;color:#fff;text-align:center;padding:30px 15px}
+.overlay{display:none;position:fixed;inset:0;background:#0008;z-index:50}.overlay.show{display:block}
+.cart-panel{position:absolute;right:0;top:0;height:100%;width:min(430px,100%);background:#fff;padding:20px;overflow:auto}
+.cart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.close{background:#eee;border:0;border-radius:50%;width:35px;height:35px;cursor:pointer}
+.cart-item{border-bottom:1px solid #eee;padding:12px 0;display:flex;justify-content:space-between;gap:10px}
+.cart-item small{color:#666;display:block;margin-top:4px}
+.qty{display:flex;align-items:center;gap:7px;margin-top:8px}.qty button{border:0;background:#eee;width:27px;height:27px;border-radius:5px;cursor:pointer}
+.cart-total{font-size:22px;font-weight:bold;margin:18px 0;color:var(--red)}
+.order-form input,.order-form textarea{width:100%;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:8px}
+.order-btn{width:100%;background:#25d366;color:white;border:0;padding:14px;border-radius:9px;font-weight:bold;font-size:16px;cursor:pointer;margin-top:8px}
+.clear{width:100%;padding:10px;border:0;background:#eee;border-radius:8px;cursor:pointer;margin-top:8px}
+@media(max-width:600px){.header-inner{align-items:flex-start}.logo h1{font-size:23px}.hero h2{font-size:29px}.grid{grid-template-columns:1fr}.cart-btn{padding:10px 13px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <h1>🍕 Pizza Hot</h1>
+      <p>Fresh • Hot • Delicious</p>
+    </div>
+    <button class="cart-btn" onclick="openCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
+  </div>
+</header>
+
+<section class="hero">
+  <h2>Our Online Menu</h2>
+  <p>Choose your favourite food and order directly on WhatsApp.</p>
+</section>
+
+<div class="controls">
+  <input id="search" class="search" type="search" placeholder="🔍 Search food...">
+  <div class="categories" id="categories"></div>
+</div>
+
+<main class="menu" id="menu"></main>
+
+<footer>
+  <h3>🍕 Pizza Hot Restaurant</h3>
+  <p style="margin-top:8px">Thank you for choosing us!</p>
+</footer>
+
+<div class="overlay" id="overlay" onclick="outsideClose(event)">
+  <aside class="cart-panel">
+    <div class="cart-head">
+      <h2>🛒 Your Order</h2>
+      <button class="close" onclick="closeCart()">✕</button>
+    </div>
+    <div id="cartItems"></div>
+    <div class="cart-total">Total: Rs. <span id="cartTotal">0</span></div>
+    <div class="order-form">
+      <input id="customerName" placeholder="Your Name">
+      <input id="customerPhone" placeholder="Phone Number">
+      <textarea id="customerAddress" rows="3" placeholder="Delivery Address"></textarea>
+      <button class="order-btn" onclick="sendWhatsApp()">📲 Order on WhatsApp</button>
+      <button class="clear" onclick="clearCart()">Clear Cart</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+const WA_NUMBER = "923000000000"; // Replace with restaurant WhatsApp number
+
+const data = {
+"Pizzas":[
+["Chicken Tikka",{Small:650,Medium:1250,Large:1650,"Extra Large":2190}],
+["Chicken Fajita",{Small:650,Medium:1250,Large:1650,"Extra Large":2190}],
+["Crown Crust",{Medium:1350,Large:1790,"Extra Large":2390}],
+["Mughlai",{Medium:1350,Large:1790,"Extra Large":2390}],
+["Chicken Malai Boti",{Small:790,Medium:1350,Large:1790,"Extra Large":2390}],
+["Pizza Hot Special",{Small:790,Medium:1350,Large:1790,"Extra Large":2390}],
+["Peri Peri Grilled",{Small:790,Medium:1350,Large:1790,"Extra Large":2390}],
+["Kababish",{Small:790,Medium:1350,Large:1790,"Extra Large":2390}],
+["Pepperoni",{Small:790,Medium:1350,Large:1790,"Extra Large":2390}],
+["Beef Grill",{Small:790,Medium:1350,Large:1790,"Extra Large":2390}],
+["Four Season",{Medium:1350,Large:1790,"Extra Large":2390}],
+["Bihari",{Medium:1350,Large:1790,"Extra Large":2390}],
+["Chicken Achar",{Small:750,Medium:1250,Large:1650,"Extra Large":2390}],
+["Spicy Fish",{Medium:1450,Large:1890,"Extra Large":2550}],
+["Vegetarian",{Small:550,Medium:1050,Large:1390,"Extra Large":1850}],
+["Margarita",{Small:500,Medium:990,Large:1290,"Extra Large":1750}],
+["Extra Topping",{Small:150,Medium:230,Large:290,"Extra Large":390}]
+],
+"Meals":[
+["Meal 1","1 Zinger Burger + 1 Regular Fries + 1 Drink Can",700],["Meal 2","1 Chicken Patty Burger + 1 Regular Fries + 1 Drink Can",590],["Meal 3","1 Chicken Fillet Burger + 1 Regular Fries + 1 Drink Can",690],["Meal 4","1 Fish Burger + 1 Regular Fries + 1 Drink Can",790],["Meal 5","1 Peri Peri Grilled Burger + 1 Regular Fries + 1 Drink Can",750],["Meal 6","1 Spicy BBQ Burger + 1 Regular Fries + 1 Drink Can",750],["Meal 7","1 Cheese Burger + 1 Regular Fries + 1 Drink Can",780],["Meal 8","1 Mega Burger with Cheese + 1 Regular Fries + 1 Drink Can",1050],["Meal 9","1 Double Decker Burger with Cheese + 1 Regular Fries + 1 Drink Can",850],["Meal 10","1 Smash Burger + 1 Regular Fries + 1 Drink Can",1090],["Meal 11","6 Hot Wings + 1 Regular Fries + 1 Drink Can",690],["Meal 12","6 BBQ Wings + 1 Regular Fries + 1 Drink Can",730],["Meal 13","6 Pcs. Peri Peri Grilled Wings + 1 Regular Fries + 1 Drink Can",760],["Meal 14","2 Pieces Chicken + 1 Regular Fries + 1 Drink Can",690],["Meal 15","5 Pieces Chicken + 1 Large Fries + 2 Drink Cans",1450],["Meal 16","6 Pcs. Honey Wings + 1 Regular Fries + 1 Drink Can",790],["Meal 17","1 Honey Chicken Wrap + 1 Regular Fries + 1 Drink Can",800],["Meal 18","1 Zingy Cheese Wrap + 1 Regular Fries + 1 Drink Can",790],["Meal 19","1 Peri Peri Grilled Wrap + 1 Regular Fries + 1 Drink Can",780],["Meal 20","1 Crispy Wrap + 1 Regular Fries + 1 Drink Can",750],["Meal 21","1 Kabab Wrap + 1 Regular Fries + 1 Drink Can",750],["Meal 22","6 Pieces Grilled Strips + 1 Regular Fries + 1 Drink Can",730],["Meal 23","Half Grilled Chicken + 1 Regular Fries + 1 Drink Can",1090],["Meal 24","1 Whole Grilled Chicken + 1 Large Fries + 2 Drinks Can",1990],["Meal 25","5 Zinger Burgers + 2 Fries Large + 1 Drink 1.5 Liter",2890],["Meal 26","5 Peri Peri Burgers + 2 Fries Large + 1 Drink 1.5 Liter",2990],["Meal 27","5 Honey Burgers + 2 Fries Large + 1 Drink 1.5 Liter",2290],["Meal 28","5 Double Decker Burgers + 2 Fries Large + 1 Drink 1.5 Liter",3290],["Shawarma Meal","1 Chicken Shawarma + 1 Fries + 1 Drink Can",460],["Nuggets Meal","6 Pcs. Nuggets + 1 Regular Fries + 1 Drink Can",630],["Bites Meal","4 Pcs. Chicken Bites + 1 Regular Fries + 1 Drink Can",630],["Roll Meal","1 Crispy Roll + 1 Fries + 1 Drink Can",530],["Honey Burger Meal","",790]
+],
+"Value Deals & Family Meals":[
+["Deal 1","1 Small Tikka Pizza + 1 Chicken Burger + 1 Drink Can + 1 Fries Regular",1190],["Deal 2","1 Medium Tikka Pizza + 5 Pcs. Nuggets + 2 Drinks Can + 1 Fries Regular",1790],["Deal 3","1 Large Tikka Pizza + 1 Piece Chicken + 1 Drink 1.5 Liter + 1 Fries Large",2090],["Deal 4","1 Medium Tikka Pizza + 1 Small Pizza + 1 Crispy Roll + 1 Drink 1.5 Liter + 1 Fries Large",2590],["Deal 5","2 Medium Tikka Pizza + 2 Large Fries + 1 Drink 1.5 Liter",2990],["Deal 6","1 Large Tikka Pizza + 1 Medium Pizza + 5 Chicken Pcs. + 6 Pcs. Nuggets + 2 Large Fries + 2 Drinks 1.5 Liter",5190],["Deal 7","1 XL Tikka Pizza + 2 Large Fries + 5 Pieces Peri Peri Wings + 1 Drink 1.5 Liter",3090],["Deal 8","2 Tikka Pizza Large + 2 Zinger Burger + 2 Fries Large + 1 Drink 1.5 Liter",4690],["Deal 9","3 Medium Tikka Pizza + 3 Chicken Burgers + 3 Fries Large + 2 Drinks 1.5 Liter",5490],["Deal 10","3 Large Tikka Pizza + 3 Zinger Burgers + 3 Fries Large + 3 Drinks 1.5 Liter",7190],["Family Meal 1","2 Peri Peri Burgers + 2 Fish Burgers + 6 Pieces Nuggets + 2 Fries Large + 1 Drink 1.5 Liter",2790],["Family Meal 2","2 Peri Peri Burgers + 2 Fillet Burgers + 1 Chicken Cheese Burger + 1 Fish Burger + 2 Fries Large + 2 Drinks 1.5 Liter",3790],["Family Meal 3","4 Zinger Burgers + 2 Peri Peri Grilled Burgers + 4 Chicken Burgers + 2 Fries Large + 2 Drinks 1.5 Liter",4990]
+],
+"Fries & Sides":[["Loaded Fries",{Half:590,Full:990}],["Pizza Fries",{Half:650,Full:1100}],["Italian Fries","",320],["Peri Peri Fries","",320],["Garlic Mayo Fries","",320],["Fries",{Medium:200,Large:250}],["Grilled Chicken Salad","",450]],
+"Special Rolls":[["Crispy Roll","",290],["Crispy Cheese Roll","",320],["Afghani Roll","",320],["Pizza Hot Special Chicken Roll","",350]],
+"Chicken Broast & Side Orders":[["Chicken Broast",{Full:1790,Half:990}],["1 Pc. Grilled Fish","",590],["1 Pc. Fried Fish","",490],["1 Pc. Fried Chicken","",220],["6 Pcs. Nuggets","",390],["4 Pcs. Bites","",430],["1 Chicken Shawarma","",220],["1 BBQ Wrap","",520],["1 Crispy Honey Chicken Burger","",550],["Extra Dip","",100],["Extra Cheese","",80]],
+"Ice Cream & Desserts":[["Special Ice Cream","",290],["Ice Cream","",200]],
+"Ice Shakes":[["Mango Ice Cream Milk Shake","",390],["Mango Lassi with Ice Cream","",450],["Apple with Special Ice Cream","",330],["Pineapple with Vanilla Ice Cream","",490],["Special Pizza Hot with Ice Cream","",490],["Strawberry with Special Ice Cream","",390],["Love Story with Ice Cream","",450],["Chocolate with Special Ice Cream","",390],["Ice Cream Milk Shake with Vanilla","",390],["Coconut Milk Shake with Ice Cream","",390],["Oreo with Ice Cream","",490]],
+"Milk Shakes":[["Mango","",290],["Apple Banana","",250],["Pine Apple","",390],["Strawberry","",290],["Chocolate","",290],["Coconut","",290],["Lassi","",230]],
+"Special Shakes":[["Kitkat","",490],["Snickers","",490],["Dairy Milk","",490],["Kinder Bueno","",590]],
+"New Arrivals":[["Pina Colada with Ice Cream","",490],["Khoya Khajoor with Ice Cream","",490],["Super Mix with Ice Cream","",590],["Mango Special with Ice Cream","",590]]
+};
+
+let cart=[], currentCat="All";
+const menu=document.getElementById("menu");
+
+function money(n){return Number(n).toLocaleString("en-PK")}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+
+function renderCategories(){
+ const cats=["All",...Object.keys(data)];
+ document.getElementById("categories").innerHTML=cats.map(c=>`<button class="${c===currentCat?'active':''}" onclick="setCat('${escapeHTML(c)}')">${escapeHTML(c)}</button>`).join("");
+}
+function setCat(c){currentCat=c;renderCategories();renderMenu()}
+function renderMenu(){
+ const q=document.getElementById("search").value.toLowerCase().trim();
+ menu.innerHTML="";
+ let found=0;
+ Object.entries(data).forEach(([cat,items])=>{
+   if(currentCat!=="All"&&currentCat!==cat)return;
+   const filtered=items.filter(x=>(x[0]+" "+(typeof x[1]==="string"?x[1]:"")).toLowerCase().includes(q));
+   if(!filtered.length)return;
+   found+=filtered.length;
+   const section=document.createElement("section");
+   section.innerHTML=`<h2 class="category-title">${escapeHTML(cat)}</h2><div class="grid"></div>`;
+   const grid=section.querySelector(".grid");
+   filtered.forEach(item=>grid.appendChild(makeCard(item,cat)));
+   menu.appendChild(section);
+ });
+ if(!found)menu.innerHTML='<div class="no-results">No menu item found.</div>';
+}
+function makeCard(item,cat){
+ const [name,info,price]=item;
+ const card=document.createElement("div");card.className="card";
+ let body="";
+ if(typeof info==="object"){
+   body=`<div class="size-row">${Object.entries(info).map(([s,p])=>`<label><input type="radio" name="size-${cat}-${name}" value="${s}" onchange="this.closest('.card').dataset.size=this.value"> ${s} <b>Rs.${money(p)}</b></label>`).join("")}</div>`;
+ }else{
+   body=info?`<div class="desc">${escapeHTML(info)}</div>`:"";
+   body+=`<div class="price">Rs. ${money(price)}</div>`;
+ }
+ card.innerHTML=`<h3>${escapeHTML(name)}</h3>${body}<button>Add to Cart</button>`;
+ card.querySelector("button").onclick=()=>{
+   let selectedPrice=price,variant="";
+   if(typeof info==="object"){
+     const size=card.dataset.size;
+     if(!size){alert("Please select a size first.");return}
+     variant=size;selectedPrice=info[size];
+   }
+   addCart(name,selectedPrice,variant);
+ };
+ return card;
+}
+function addCart(name,price,variant=""){
+ const key=name+"|"+variant;
+ const existing=cart.find(x=>x.key===key);
+ if(existing)existing.qty++;
+ else cart.push({key,name,price,variant,qty:1});
+ updateCart();
+}
+function updateCart(){
+ document.getElementById("cartCount").textContent=cart.reduce((s,x)=>s+x.qty,0);
+ document.getElementById("cartTotal").textContent=money(cart.reduce((s,x)=>s+x.price*x.qty,0));
+ const box=document.getElementById("cartItems");
+ box.innerHTML=cart.length?cart.map((x,i)=>`<div class="cart-item"><div><b>${escapeHTML(x.name)}</b>${x.variant?`<small>${escapeHTML(x.variant)}</small>`:""}<div class="qty"><button onclick="changeQty(${i},-1)">−</button><span>${x.qty}</span><button onclick="changeQty(${i},1)">+</button></div></div><b>Rs.${money(x.price*x.qty)}</b></div>`).join(""):"<p style='color:#777'>Your cart is empty.</p>";
+}
+function changeQty(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);updateCart()}
+function clearCart(){cart=[];updateCart()}
+function openCart(){document.getElementById("overlay").classList.add("show");updateCart()}
+function closeCart(){document.getElementById("overlay").classList.remove("show")}
+function outsideClose(e){if(e.target.id==="overlay")closeCart()}
+function sendWhatsApp(){
+ if(!cart.length){alert("Please add items to your cart.");return}
+ const name=document.getElementById("customerName").value.trim()||"Not provided";
+ const phone=document.getElementById("customerPhone").value.trim()||"Not provided";
+ const address=document.getElementById("customerAddress").value.trim()||"Not provided";
+ let msg="🍕 *NEW RESTAURANT ORDER*%0A%0A";
+ msg+=`👤 Name: ${name}%0A📞 Phone: ${phone}%0A📍 Address: ${address}%0A%0A*Order:*%0A`;
+ cart.forEach(x=>msg+=`• ${x.name}${x.variant?" ("+x.variant+")":""} x${x.qty} = Rs.${x.price*x.qty}%0A`);
+ msg+=`%0A💰 *Total: Rs.${cart.reduce((s,x)=>s+x.price*x.qty,0)}*`;
+ window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`,"_blank");
+}
+document.getElementById("search").addEventListener("input",renderMenu);
+renderCategories();renderMenu();updateCart();
+</script>
+</body>
+</html>
